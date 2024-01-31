@@ -1,0 +1,80 @@
+import sys
+import re
+import os
+import argparse
+
+LOGDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "log")
+FILENAME = r'hosts_access_log_(.*?).txt'
+PROGNAME = sys.argv[0]
+
+
+def example_usage(prog):
+    ''''This is example
+    '''
+    helpstring = """
+    Example:
+    ========
+    1. prog_name -h
+    
+    2. prog_name_ -r 
+    """
+    helpstring.replace("prog_name", prog)
+    
+    return helpstring  
+    
+    
+
+def get_log_files(pattern, base):
+    regexp1 = re.compile(pattern)
+    
+    logfiles = []
+    
+    for root, dirs, files in os.walk(base):
+        for f in files:
+            if regexp1.match(f):
+                logfiles.append(os.path.join(root,f))
+    print(logfiles)
+    return logfiles
+
+
+def read_files(fname):
+    with open(fname) as fh:
+        for line in fh:
+            yield line
+
+
+def main():
+    #regexp2 = re.compile(r'
+    
+    parser = argparse.ArgumeParser(description="This program analyze log files",
+                                 epilog = example_usage(PROGNAME),
+                                 formatter_class = argparse.RawDescriptionHelpFormatter
+                                )
+    
+    parser.add_argument('-a', '--analysis', action='store', help='analysis of log files')
+    args = parser.parse_args()
+    
+    if args.analysis:                                     
+        for file in get_log_files(FILENAME, LOGDIR):
+            d,f = os.path.split(os.path.abspath(file))
+            tf = 'records_' + f 
+            report_file = os.path.join(d, tf) 
+            host_req_cnt = {}
+            
+            for line in read_files(file):
+                ## process the lines below
+                line_split = line.split()
+                if host_req_cnt.get(line_split[0]):
+                    host_req_cnt[line_split[0]] = host_req_cnt[line_split[0]] + 1
+                else:
+                    host_req_cnt[line_split[0]] = 1
+            
+            with open(report_file, 'w') as f:
+                for k,v in host_req_cnt.items():
+                    my_string = [k, str(v),'\n']
+                    f.writelines(' '.join(my_string))
+                
+            
+if __name__ == '__main__':
+    sys.exit(main())
+            
